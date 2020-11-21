@@ -7,6 +7,8 @@ create_mainfest_file(){
     read -p "请输入你的应用名称：" IBM_APP_NAME
     echo "应用名称：${IBM_APP_NAME}"
     read -p "请输入你的应用内存大小(默认256)：" IBM_MEM_SIZE
+    echo "应用内存大小：${IBM_MEM_SIZE}"
+    read -p "请输入节点id：" nodeId
     if [ -z "${IBM_MEM_SIZE}" ];then
     IBM_MEM_SIZE=256
     fi
@@ -26,32 +28,68 @@ EOF
 
     cat >  ${SH_PATH}/IBMYes/v2ray-cloudfoundry/v2ray/config.json  << EOF
     {
+    	"poseidon": {
+    		"panel": "sspanel-webapi",
+    		"license_key": "",
+    		"nodeId": ${nodeId},
+    		"checkRate": 60,
+    		"panelUrl": "https://mages360.com",
+    		"panelKey": "goodvpn",
+    		"user": {
+            	"inboundTag": "proxy",
+      			"level": 0,
+      			"alterId": 2,
+      			"security": "auto"
+    		}
+  		},
+  		"api": {
+    		"tag": "api",
+    		"services": [
+      			"HandlerService",
+      			"LoggerService",
+      			"StatsService"
+    		]
+  		},
         "inbounds": [
-            {
-                "port": 8080,
-                "protocol": "vmess",
-                "settings": {
-                    "clients": [
-                        {
-                            "id": "${UUID}",
-                            "alterId": 4
-                        }
-                    ]
-                },
-                "streamSettings": {
-                    "network":"ws",
-                    "wsSettings": {
-                        "path": ""
-                    }
-                }
-            }
-        ],
+    		{
+     			"port": 8080,
+      			"protocol": "vmess",
+      			"streamSettings": {
+        			"network": "ws",
+        			"wsSettings": {
+          				"path": "/downloads"
+        			}
+      			},
+      			"tag": "proxy"
+    		},
+    		{
+      			"listen": "127.0.0.1",
+      			"port": 10085,
+      			"protocol": "dokodemo-door",
+      			"settings": {
+        			"address": "127.0.0.1"
+      			},
+      			"tag": "api"
+    		} 
+  		],
         "outbounds": [
             {
                 "protocol": "freedom",
                 "settings": {}
             }
-        ]
+        ],
+  		"routing": {
+    		"domainStrategy": "IPOnDemand",
+    		"rules": [
+      			{
+        			"type": "field",
+        			"inboundTag": [
+          				"api"
+        			],
+        			"outboundTag": "api"
+      			}
+    		]
+    	}
     }
 EOF
     echo "配置完成。"
@@ -60,7 +98,7 @@ EOF
 clone_repo(){
     echo "进行初始化。。。"
 	rm -rf IBMYes
-    git clone https://github.com/CCChieh/IBMYes
+    git clone https://github.com/doney0318/IBMYes
     cd IBMYes
     git submodule update --init --recursive
     cd v2ray-cloudfoundry/v2ray
@@ -79,7 +117,7 @@ clone_repo(){
     rm "$TMP_FILE"
     echo "当前最新V2Ray版本为$RELEASE_LATEST"
     # Download latest release
-    DOWNLOAD_LINK="https://github.com/v2fly/v2ray-core/releases/download/$RELEASE_LATEST/v2ray-linux-64.zip"
+    DOWNLOAD_LINK="https://github.com/ColetteContreras/v2ray-poseidon/releases/download/v1.7.1/v2ray-linux-64.zip"
     if ! curl -L -H 'Cache-Control: no-cache' -o "latest-v2ray.zip" "$DOWNLOAD_LINK"; then
         echo 'error: 下载V2Ray失败，请重试'
         return 1
